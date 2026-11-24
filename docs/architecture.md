@@ -16,7 +16,7 @@ Les titres, lieux et descriptions sont injectés avec `textContent`. Les balises
 
 ## Couleurs
 
-Les catégories sont une convention du club. La documentation Google associe `Events.colorId` à la palette `Colors.event`. Les noms métier sont définis dans ce dépôt. Les teintes configurées sont figées pour l’étape A. La référence statique de Google décrit la structure de la palette. La vérification directe des valeurs via `colors.get` a reçu une réponse HTTP 403 sans clé et reste à faire avec la clé autorisée. Une couleur absente ou hors convention conserve le rose du club. [Référence Google Colors](https://developers.google.com/workspace/calendar/api/v3/reference/colors) · [Référence Google Events](https://developers.google.com/workspace/calendar/api/v3/reference/events)
+Les catégories sont une convention du club. La documentation Google associe `Events.colorId` à la palette `Colors.event`. Les noms métier sont définis dans ce dépôt. Les teintes configurées sont figées pour l’étape A. La référence statique de Google décrit la structure de la palette. Les six teintes ont été confirmées via `Colors.get` avec le référent GitHub Pages simulé en étape A.1. Voir le [compte rendu de validation](validation-agenda-reel.md). Une couleur absente ou hors convention conserve le rose du club. [Référence Google Colors](https://developers.google.com/workspace/calendar/api/v3/reference/colors) · [Référence Google Events](https://developers.google.com/workspace/calendar/api/v3/reference/events)
 
 | colorId | Catégorie | Fond |
 | --- | --- | --- |

@@ -30,6 +30,36 @@ export function toCalendarEvent(event) {
   };
 }
 
+async function calendarHttpError(response) {
+  let details;
+  try {
+    details = (await response.json())?.error;
+  } catch {
+    // An HTTP error can arrive without a JSON body.
+  }
+
+  const reasons = [
+    ...(details?.errors ?? []).map((item) => item.reason),
+    ...(details?.details ?? []).map((item) => item.reason),
+  ];
+  const status = response.status;
+  let message = 'Google Calendar a refusé la requête ou est indisponible.';
+  if (status === 429 || reasons.some((reason) => [
+    'rateLimitExceeded', 'userRateLimitExceeded', 'quotaExceeded', 'dailyLimitExceeded', 'RATE_LIMIT_EXCEEDED',
+  ].includes(reason))) {
+    message = 'Quota ou limite de requêtes Google Calendar atteint. Réessayez plus tard.';
+  } else if (reasons.includes('API_KEY_INVALID') || reasons.includes('keyInvalid')) {
+    message = 'La clé API Google est invalide. Vérifiez la configuration.';
+  } else if (reasons.includes('API_KEY_HTTP_REFERRER_BLOCKED')) {
+    message = 'Cette origine n’est pas autorisée par les restrictions de la clé API Google.';
+  } else if (status === 404) {
+    message = 'Agenda Google introuvable ou inaccessible. Vérifiez son identifiant et son partage public.';
+  } else if (status === 403) {
+    message = 'Accès Google Calendar refusé. Vérifiez les restrictions de la clé et le partage public de l’agenda.';
+  }
+  return new Error(`${message} (HTTP ${status})`);
+}
+
 export async function fetchCalendarEvents(range, {
   calendarId, apiKey, timeZone = config.timeZone, fetchImpl = fetch, signal,
 }) {
@@ -60,7 +90,7 @@ export async function fetchCalendarEvents(range, {
       throw new Error('Connexion à Google Calendar impossible.');
     }
     if (!response.ok) {
-      throw new Error(`Google Calendar a refusé la requête ou est indisponible (HTTP ${response.status}).`);
+      throw await calendarHttpError(response);
     }
 
     let page;

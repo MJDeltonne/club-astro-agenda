@@ -1,6 +1,6 @@
 export const config = {
-  calendarId: '',
-  apiKey: '',
+  calendarId: 'c2ee325fbe2bf2562777657dece7c7ed13b779d8cc5ea940baf61d3de7a96fe0@group.calendar.google.com',
+  apiKey: 'AIzaSyBuWBr0daYQf0fhTB8jjSHlv6h2d4-6IlM',
   locale: 'fr',
   timeZone: 'Europe/Paris',
   firstDay: 1,

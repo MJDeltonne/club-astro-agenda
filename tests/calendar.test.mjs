@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { config } from '../js/config.js';
 import { fetchCalendarEvents, toCalendarEvent } from '../js/calendar-api.js';
-import { fillEventDetails } from '../js/agenda.js';
+import { fillEventDetails, initialize } from '../js/agenda.js';
+import { eventCategoryId, eventSchedule, printEvents, subscriptionLinks } from '../js/agenda-view.js';
 
 const range = {
   startStr: '2026-03-01T00:00:00+01:00',
@@ -106,14 +107,226 @@ test('refuse un jeton de pagination répété', async () => {
 
 test('rend le titre, le lieu et la description comme texte inerte', () => {
   const payload = '<img src=x onerror="alert(1)"><script>alert(2)</script>';
-  const elements = Object.fromEntries(['title', 'category', 'location', 'description'].map((name) => [
+  const elements = Object.fromEntries(['title', 'category', 'date', 'time', 'location', 'description'].map((name) => [
     name,
     { textContent: '', set innerHTML(_) { assert.fail('Écriture HTML interdite'); } },
   ]));
   fillEventDetails(elements, toCalendarEvent({
     ...timedEvent, summary: payload, description: payload, location: payload,
-  }));
+  }), { date: '28 mars 2026', time: '22:30' });
   for (const name of ['title', 'location', 'description']) {
     assert.equal(elements[name].textContent, payload);
   }
+});
+
+function mockAgenda(t, { mobile = false } = {}) {
+  const nodes = new Map();
+  const node = () => ({
+    hidden: true,
+    textContent: '',
+    style: {},
+    children: [],
+    handlers: new Map(),
+    addEventListener(name, callback) { this.handlers.set(name, callback); },
+    setAttribute() {},
+    append(...children) { this.children.push(...children); },
+    showModal() { this.open = true; },
+    close() { this.open = false; },
+    getBoundingClientRect() { return { left: 10, right: 100, top: 10, bottom: 100 }; },
+    set innerHTML(_) { assert.fail('Écriture HTML interdite'); },
+  });
+  const get = (id) => {
+    if (!nodes.has(id)) nodes.set(id, node());
+    return nodes.get(id);
+  };
+
+  const state = {
+    get,
+    options: null,
+    events: [],
+    window: node(),
+  };
+  const globals = {
+    document: { getElementById: get, createElement: node },
+    window: state.window,
+    matchMedia: () => ({ matches: mobile }),
+    FullCalendar: {
+      Luxon3: {},
+      globalLocales: [{ code: 'fr' }],
+      Calendar: class {
+        constructor(_element, options) { state.options = options; }
+        render() {}
+        getEvents() { return state.events; }
+        batchRendering(callback) { callback(); }
+      },
+    },
+    luxon: { DateTime: {} },
+  };
+  for (const [name, value] of Object.entries(globals)) {
+    const previous = Object.getOwnPropertyDescriptor(globalThis, name);
+    Object.defineProperty(globalThis, name, { configurable: true, writable: true, value });
+    t.after(() => {
+      if (previous) Object.defineProperty(globalThis, name, previous);
+      else delete globalThis[name];
+    });
+  }
+  return state;
+}
+
+test('signale les erreurs Google en mode réel sans afficher la démonstration', async (t) => {
+  const cases = [
+    [400, { details: [{ reason: 'API_KEY_INVALID' }] }, /clé API Google est invalide/],
+    [403, { details: [{ reason: 'API_KEY_HTTP_REFERRER_BLOCKED' }] }, /origine n’est pas autorisée/],
+    [403, { errors: [{ reason: 'quotaExceeded' }] }, /Quota/],
+    [429, {}, /Quota/],
+    [403, { errors: [{ reason: 'forbidden' }], details: [{ reason: 'ACCESS_DENIED' }] }, /Vérifiez les restrictions de la clé et le partage public/],
+    [404, {}, /Agenda Google introuvable ou inaccessible/],
+  ];
+  const ui = mockAgenda(t);
+  t.mock.method(globalThis, 'fetch');
+
+  for (const [status, error, message] of cases) {
+    globalThis.fetch.mock.mockImplementation(async () => Response.json({
+      error: { ...error, message: 'Détail brut à ne pas afficher.' },
+    }, { status }));
+    initialize(settings);
+    await assert.rejects(ui.options.events(range), message);
+    assert.match(ui.get('status').textContent, message);
+    assert.doesNotMatch(ui.get('status').textContent, /Détail brut/);
+    assert.equal(ui.get('retry').hidden, false);
+    assert.equal(ui.get('demo').hidden, true);
+  }
+
+  ui.options = null;
+  initialize({ calendarId: settings.calendarId, apiKey: '' });
+  assert.equal(ui.options, null);
+  assert.match(ui.get('status').textContent, /Configuration Google incomplète/);
+  assert.equal(ui.get('demo').hidden, true);
+});
+test('configure les quatre vues avec un démarrage adapté à la largeur', async (t) => {
+  for (const mobile of [false, true]) {
+    await t.test(mobile ? 'smartphone' : 'ordinateur', (t) => {
+      const ui = mockAgenda(t, { mobile });
+      initialize(settings);
+      assert.equal(ui.options.initialView, mobile ? 'listUpcoming' : 'dayGridMonth');
+      assert.deepEqual(ui.options.headerToolbar.center.split(','), ['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listUpcoming']);
+      assert.equal(ui.options.views.listUpcoming.type, 'list');
+      assert.deepEqual(ui.options.views.listUpcoming.duration, { days: 30 });
+      assert.deepEqual(ui.options.views.listUpcoming.dateIncrement, { days: 30 });
+      assert.equal(ui.options.views.listUpcoming.dateAlignment, 'day');
+    });
+  }
+});
+
+test('les filtres modifient le rendu des événements existants sans relire Google', async (t) => {
+  const ui = mockAgenda(t);
+  const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({
+    items: [timedEvent, { ...timedEvent, id: 'unknown', colorId: '11' }, { ...timedEvent, id: 'default', colorId: undefined }],
+  }));
+  initialize(settings);
+  const events = await ui.options.events(range);
+  ui.events = events.map((event) => ({
+    ...event,
+    setProp(name, value) { this[name] = value; },
+  }));
+  assert.deepEqual(ui.events.map((event) => event.display), ['block', 'block', 'block']);
+  assert.deepEqual(ui.events.map(eventCategoryId), ['1', 'unclassified', 'unclassified']);
+  assert.deepEqual(ui.events.slice(1).map((event) => event.color), ['#EF108B', '#EF108B']);
+
+  const labels = ui.get('categories').children;
+  assert.equal(labels.length, 7);
+  const [check] = labels.find((label) => label.children.includes('Non classés')).children;
+  assert.equal(check.checked, true);
+  check.checked = false;
+  check.handlers.get('change')();
+  assert.deepEqual(ui.events.map((event) => event.display), ['block', 'none', 'none']);
+  check.checked = true;
+  check.handlers.get('change')();
+  assert.deepEqual(ui.events.map((event) => event.display), ['block', 'block', 'block']);
+  assert.equal(fetch.mock.callCount(), 1);
+});
+
+test('les réponses tardives sont ignorées et les filtres actifs persistent entre les périodes', async (t) => {
+  const ui = mockAgenda(t);
+  const requests = [];
+  t.mock.method(globalThis, 'fetch', (_url, options) => new Promise((resolve) => {
+    requests.push({ resolve, signal: options.signal });
+  }));
+  initialize(settings);
+  const old = ui.options.events(range);
+  const recent = ui.options.events({
+    startStr: '2026-04-01T00:00:00+02:00', endStr: '2026-05-01T00:00:00+02:00',
+  });
+  assert.equal(requests[0].signal.aborted, true);
+
+  const label = ui.get('categories').children.find((label) => label.children.includes('Sorties d’observation'));
+  const [check] = label.children;
+  check.checked = false;
+  check.handlers.get('change')();
+  const recentEvent = { ...timedEvent, id: 'recent',
+    start: { dateTime: '2026-04-28T22:30:00+02:00' },
+    end: { dateTime: '2026-04-28T23:30:00+02:00' } };
+  requests[1].resolve(Response.json({ items: [recentEvent] }));
+  assert.deepEqual((await recent).map((event) => [event.id, event.display]), [['recent', 'none']]);
+  requests[0].resolve(Response.json({ items: [] }));
+  assert.deepEqual(await old, []);
+  assert.equal(ui.get('status').textContent, '');
+  assert.equal(requests.length, 2);
+});
+
+test('la modale affiche les horaires de Paris et respecte les fins exclusives', (t) => {
+  const ui = mockAgenda(t);
+  initialize(settings);
+  const event = {
+    ...toCalendarEvent(timedEvent),
+    start: new Date(timedEvent.start.dateTime),
+    end: new Date(timedEvent.end.dateTime),
+  };
+  ui.options.eventClick({ event });
+  assert.equal(ui.get('event-details').open, true);
+  assert.equal(ui.get('event-date').textContent, 'Du 28 mars 2026 au 29 mars 2026');
+  assert.equal(ui.get('event-time').textContent, '22:30 – 03:30');
+  assert.equal(ui.get('event-location').hidden, false);
+
+  const start = new Date('2026-03-28T00:00:00+01:00');
+  assert.deepEqual(eventSchedule({ allDay: true, start, end: new Date('2026-03-29T00:00:00+01:00') }),
+    { date: '28 mars 2026', time: 'Journée entière' });
+  ui.options.eventClick({ event: {
+    title: 'Journées', allDay: true, start, end: new Date('2026-03-31T00:00:00+02:00'),
+    extendedProps: { category: '', location: '', description: '  ' },
+  } });
+  assert.equal(ui.get('event-date').textContent, 'Du 28 mars 2026 au 30 mars 2026');
+  for (const id of ['event-category', 'event-location', 'event-description']) {
+    assert.equal(ui.get(id).hidden, true);
+  }
+  const dialog = ui.get('event-details');
+  dialog.handlers.get('click')({ target: dialog, clientX: 50, clientY: 50 });
+  assert.equal(dialog.open, true);
+  dialog.handlers.get('click')({ target: dialog, clientX: 5, clientY: 5 });
+  assert.equal(dialog.open, false);
+});
+
+test('les liens d’abonnement encodent l’identifiant sans exposer la clé', () => {
+  const id = 'groupe+test@example.invalid';
+  const { google, ical } = subscriptionLinks(` ${id} `);
+  assert.equal(new URL(google).searchParams.get('cid'), id);
+  assert.equal(new URL(ical).pathname, '/calendar/ical/groupe%2Btest%40example.invalid/public/basic.ics');
+  assert.equal(subscriptionLinks(' '), null);
+});
+
+test('l’impression sélectionne les événements visibles et les trie par début', () => {
+  const make = (title, start, end, colorId) => ({
+    title, start: new Date(start), end: end ? new Date(end) : null, extendedProps: { colorId },
+  });
+  const calendar = {
+    view: { activeStart: new Date('2026-04-01'), activeEnd: new Date('2026-04-03') },
+    getEvents: () => [
+      make('Courant', '2026-04-02', null, '4'),
+      make('Ancien', '2026-03-31', '2026-04-01', '4'),
+      make('Chevauchement', '2026-03-30', '2026-04-02', '4'),
+      make('Masqué', '2026-04-01', null, '1'),
+      make('Futur', '2026-04-03', null, '4'),
+    ],
+  };
+  assert.deepEqual(printEvents(calendar, new Set(['1'])).map((event) => event.title), ['Chevauchement', 'Courant']);
 });

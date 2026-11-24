@@ -14,22 +14,51 @@
 </head>
 <body>
   <main>
-    <header>
-      <p>Club Astronomie MJC Douai</p>
-      <h1>Agenda</h1>
+    <header class="agenda-header">
+      <div>
+        <p>Club Astronomie MJC Douai</p>
+        <h1>Agenda</h1>
+      </div>
+      <div class="agenda-actions">
+        <button id="subscribe" type="button" hidden>S’abonner</button>
+        <button id="print" type="button" hidden>Imprimer</button>
+      </div>
     </header>
+    <fieldset id="categories" hidden><legend>Catégories affichées</legend></fieldset>
     <p id="demo" class="demo" hidden>Mode démonstration · Événements fictifs</p>
     <p id="status" role="status">Initialisation du calendrier…</p>
     <button id="retry" type="button" hidden>Réessayer</button>
     <div id="calendar" aria-label="Calendrier des événements"></div>
+    <section id="print-agenda" aria-label="Agenda à imprimer"></section>
     <noscript>Activez JavaScript pour consulter l’agenda.</noscript>
   </main>
   <dialog id="event-details" aria-labelledby="event-title">
-    <h2 id="event-title"></h2>
+    <div class="dialog-header">
+      <h2 id="event-title"></h2>
+      <form method="dialog" class="dialog-close">
+        <button type="submit" aria-label="Fermer les détails" autofocus>×</button>
+      </form>
+    </div>
     <p id="event-category"></p>
+    <p id="event-date"></p>
+    <p id="event-time"></p>
     <p id="event-location"></p>
     <p id="event-description"></p>
-    <form method="dialog"><button type="submit" autofocus>Fermer</button></form>
+  </dialog>
+  <dialog id="subscription" aria-labelledby="subscription-title">
+    <div class="dialog-header">
+      <h2 id="subscription-title">S’abonner à l’agenda</h2>
+      <form method="dialog" class="dialog-close">
+        <button type="submit" aria-label="Fermer l’abonnement" autofocus>×</button>
+      </form>
+    </div>
+    <p><a id="google-subscription" target="_blank" rel="noopener noreferrer">Ouvrir dans Google Calendar</a></p>
+    <label for="ical-address">Adresse iCal publique</label>
+    <div class="ical-controls">
+      <input id="ical-address" type="url" readonly>
+      <button id="copy-ical" type="button">Copier</button>
+    </div>
+    <p id="copy-status" role="status"></p>
   </dialog>
 </body>
 </html>
