@@ -2,8 +2,9 @@ import { config } from './config.js';
 import { fetchCalendarEvents, toCalendarEvent } from './calendar-api.js';
 import {
   applyCategoryFilters, eventCategoryId, eventSchedule, printEvents,
-  subscriptionLinks, unclassified, viewOptions,
+  subscriptionLinks, viewOptions,
 } from './agenda-view.js';
+import { categories, unclassified } from './event-categories.js';
 
 export function fillEventDetails(elements, event, schedule) {
   const { category, location, description } = event.extendedProps;
@@ -61,7 +62,7 @@ function installSubscription(calendarId) {
 
 function installFilters(calendar, hiddenCategories) {
   const legend = document.getElementById('categories');
-  for (const [id, category] of [...Object.entries(config.categories), ['unclassified', unclassified]]) {
+  for (const [id, category] of [...Object.entries(categories), [unclassified.id, unclassified]]) {
     const label = document.createElement('label');
     const check = document.createElement('input');
     const swatch = document.createElement('span');
@@ -119,17 +120,18 @@ function installPrinting(calendar, hiddenCategories, getStatus) {
 
 function demoEvents(DateTime) {
   const month = DateTime.now().setZone(config.timeZone).startOf('month');
-  const categories = [
+  const examples = [
     ['4', 'Séance du club', 3, 1],
     ['1', 'Sortie d’observation', 6, 1],
     ['5', 'Manifestation publique', 10, 2],
     ['2', 'Conférence et atelier', 14, 1],
     ['7', 'Voyage et visite', 18, 2],
     ['8', 'Administration', 22, 1],
+    ['3', 'Pleine lune', 24, 1],
     ['', 'Événement sans catégorie', 25, 1],
   ];
 
-  return categories.map(([colorId, summary, day, duration]) => {
+  return examples.map(([colorId, summary, day, duration]) => {
     const start = month.plus({ days: day - 1 });
     const timed = colorId === '1';
     return toCalendarEvent({
@@ -245,7 +247,8 @@ export function initialize(settings = config) {
       const category = document.createElement('span');
       title.className = 'fc-event-title';
       title.textContent = timeText && view.type !== 'listUpcoming' ? `${timeText} ${event.title}` : event.title;
-      category.className = 'event-category-label';
+      category.className = view.type === 'dayGridMonth'
+        ? 'event-category-label visually-hidden' : 'event-category-label';
       category.textContent = event.extendedProps.category || unclassified.label;
       return { domNodes: [title, category] };
     },

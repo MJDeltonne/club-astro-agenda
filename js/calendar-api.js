@@ -1,4 +1,5 @@
 import { config } from './config.js';
+import { categories, classifyEvent, unclassified } from './event-categories.js';
 
 const fields = 'nextPageToken,items(id,status,summary,start(date,dateTime),end(date,dateTime),location,description,colorId)';
 
@@ -11,7 +12,8 @@ export function toCalendarEvent(event) {
   if (!start) return null;
 
   const colorId = event.colorId ?? null;
-  const category = Object.hasOwn(config.categories, colorId) ? config.categories[colorId] : null;
+  const categoryId = classifyEvent(colorId, event.summary ?? '');
+  const category = categories[categoryId];
 
   return {
     id: event.id,
@@ -19,12 +21,13 @@ export function toCalendarEvent(event) {
     start,
     end,
     allDay,
-    color: category?.color ?? config.defaultColor,
+    color: category?.color ?? unclassified.color,
     textColor: '#161923',
     extendedProps: {
       location: event.location ?? '',
       description: event.description ?? '',
       colorId,
+      categoryId,
       category: category?.label ?? '',
     },
   };

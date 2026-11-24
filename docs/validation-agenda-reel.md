@@ -31,7 +31,7 @@ Validation du 24 novembre 2026, en lecture seule depuis Node avec référents ex
 | `https://mjdeltonne.github.io/` | HTTP 200, 15 événements entre le 24 octobre et le 25 décembre 2026 (UTC), dont 15 titres, 5 lieux et 11 descriptions | HTTP 200, teintes conformes pour les six identifiants 1, 2, 4, 5, 7 et 8 |
 | `http://127.0.0.1:8000/` | HTTP 200 au contrôle final, 15 événements | HTTP 200 au contrôle final, six teintes conformes |
 
-Les 15 événements reçus étaient dépourvus de `colorId`. Ils utilisent donc tous la couleur par défaut `#EF108B`. La correspondance des teintes a été confirmée par Google. L’application des catégories à des événements réels reste à contrôler sur des événements portant une couleur individuelle.
+Les 15 événements reçus étaient dépourvus de `colorId`. À l’étape A.1, ils utilisaient donc tous la couleur par défaut `#EF108B`. L’étape D.2 ajoute le [classement local par titre](architecture.md#couleurs-et-classification). La correspondance des teintes a été confirmée par Google. L’application des catégories à des événements réels reste à contrôler sur des événements portant une couleur individuelle.
 
 Le premier essai local a renvoyé HTTP 403 sur les deux endpoints, avec les raisons `forbidden` et `ACCESS_DENIED`. Le contrôle final a réussi pour les deux référents. La cause du refus initial reste inconnue. Le référent envoyé par un navigateur sur le futur hébergement et dans Odoo reste à vérifier.
 

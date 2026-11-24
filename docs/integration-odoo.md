@@ -2,6 +2,12 @@
 
 L’agenda occupe la largeur disponible jusqu’à 72 rem. Le fond général laisse apparaître le fond étoilé de la page hôte. Les panneaux du calendrier, des filtres et des dialogues ont des fonds opaques.
 
+## Transparence de l’iframe
+
+Le document de l’agenda déclare `color-scheme: light dark` à la racine pour suivre le schéma de l’élément iframe. Des schémas différents peuvent amener le navigateur à peindre un fond opaque, même avec un fond CSS transparent. Le document, le corps de page et le conteneur principal sont transparents. Les panneaux et dialogues conservent leur fond sombre. [CSS Color Adjustment, section 2.4](https://drafts.csswg.org/css-color-adjust-1/#color-scheme-effect)
+
+Si le gris persiste, inspecter dans Odoo les styles calculés de l’iframe et de ses conteneurs. Une couleur ou une image de fond opaque sur le bloc doit être retirée de ce bloc pour laisser apparaître le fond étoilé. Vérifier également les pseudo-éléments qui pourraient le recouvrir. La correction côté Odoo reste à appliquer uniquement si la recette confirme cette origine.
+
 ## Dimensions de départ
 
 | Largeur de l’iframe | Hauteur de départ | Vue initiale |

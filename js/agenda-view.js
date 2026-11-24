@@ -1,6 +1,5 @@
 import { config } from './config.js';
 
-export const unclassified = { label: 'Non classés', color: config.defaultColor };
 export const viewOptions = {
   desktop: 'dayGridMonth',
   mobile: 'listUpcoming',
@@ -9,8 +8,7 @@ export const viewOptions = {
 };
 
 export function eventCategoryId(event) {
-  const { colorId } = event.extendedProps;
-  return Object.hasOwn(config.categories, colorId) ? String(colorId) : 'unclassified';
+  return event.extendedProps.categoryId;
 }
 
 export function applyCategoryFilters(calendar, hiddenCategories) {

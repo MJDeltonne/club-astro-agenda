@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { config } from '../js/config.js';
+import { categories } from '../js/event-categories.js';
 import { fetchCalendarEvents, toCalendarEvent } from '../js/calendar-api.js';
 import { fillEventDetails, initialize } from '../js/agenda.js';
 import { eventCategoryId, eventSchedule, printEvents, subscriptionLinks } from '../js/agenda-view.js';
@@ -42,10 +42,10 @@ test('conserve les dates civiles et la fin exclusive des événements en journé
 });
 
 test('applique toutes les couleurs configurées et la couleur par défaut', () => {
-  const expected = { 1: '#a4bdfc', 2: '#7ae7bf', 4: '#ff887c', 5: '#fbd75b', 7: '#46d6db', 8: '#e1e1e1' };
+  const expected = { 1: '#a4bdfc', 2: '#7ae7bf', 4: '#ff887c', 5: '#fbd75b', 7: '#46d6db', 8: '#e1e1e1', 3: '#DBADFF' };
   for (const [colorId, color] of Object.entries(expected)) {
     assert.equal(toCalendarEvent({ ...timedEvent, colorId }).color, color);
-    assert.ok(config.categories[colorId].label);
+    assert.ok(categories[colorId].label);
   }
   for (const colorId of [undefined, '11', 'constructor', '__proto__']) {
     assert.equal(toCalendarEvent({ ...timedEvent, colorId }).color, '#EF108B');
@@ -221,7 +221,12 @@ test('configure les quatre vues avec un démarrage adapté à la largeur', async
 test('les filtres modifient le rendu des événements existants sans relire Google', async (t) => {
   const ui = mockAgenda(t);
   const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({
-    items: [timedEvent, { ...timedEvent, id: 'unknown', colorId: '11' }, { ...timedEvent, id: 'default', colorId: undefined }],
+    items: [
+      timedEvent,
+      { ...timedEvent, id: 'unknown', colorId: '11' },
+      { ...timedEvent, id: 'default', colorId: undefined },
+      { ...timedEvent, id: 'phenomenon', summary: 'Pleine lune', colorId: undefined },
+    ],
   }));
   initialize(settings);
   const events = await ui.options.events(range);
@@ -229,20 +234,24 @@ test('les filtres modifient le rendu des événements existants sans relire Goog
     ...event,
     setProp(name, value) { this[name] = value; },
   }));
-  assert.deepEqual(ui.events.map((event) => event.display), ['block', 'block', 'block']);
-  assert.deepEqual(ui.events.map(eventCategoryId), ['1', 'unclassified', 'unclassified']);
-  assert.deepEqual(ui.events.slice(1).map((event) => event.color), ['#EF108B', '#EF108B']);
+  assert.deepEqual(ui.events.map((event) => event.display), ['block', 'block', 'block', 'block']);
+  assert.deepEqual(ui.events.map(eventCategoryId), ['1', 'unclassified', 'unclassified', '3']);
+  assert.deepEqual(ui.events.slice(1, 3).map((event) => event.color), ['#EF108B', '#EF108B']);
 
   const labels = ui.get('categories').children;
-  assert.equal(labels.length, 7);
+  assert.equal(labels.length, 8);
   const [check] = labels.find((label) => label.children.includes('Non classés')).children;
   assert.equal(check.checked, true);
   check.checked = false;
   check.handlers.get('change')();
-  assert.deepEqual(ui.events.map((event) => event.display), ['block', 'none', 'none']);
+  assert.deepEqual(ui.events.map((event) => event.display), ['block', 'none', 'none', 'block']);
   check.checked = true;
   check.handlers.get('change')();
-  assert.deepEqual(ui.events.map((event) => event.display), ['block', 'block', 'block']);
+  assert.deepEqual(ui.events.map((event) => event.display), ['block', 'block', 'block', 'block']);
+  const [phenomenon] = labels.find((label) => label.children.includes('Phénomènes astronomiques')).children;
+  phenomenon.checked = false;
+  phenomenon.handlers.get('change')();
+  assert.deepEqual(ui.events.map((event) => event.display), ['block', 'block', 'block', 'none']);
   assert.equal(fetch.mock.callCount(), 1);
 });
 
@@ -316,17 +325,70 @@ test('les liens d’abonnement encodent l’identifiant sans exposer la clé', (
 
 test('l’impression sélectionne les événements visibles et les trie par début', () => {
   const make = (title, start, end, colorId) => ({
-    title, start: new Date(start), end: end ? new Date(end) : null, extendedProps: { colorId },
+    title, start: new Date(start), end: end ? new Date(end) : null, extendedProps: { categoryId: colorId },
   });
   const calendar = {
     view: { activeStart: new Date('2026-04-01'), activeEnd: new Date('2026-04-03') },
     getEvents: () => [
       make('Courant', '2026-04-02', null, '4'),
       make('Ancien', '2026-03-31', '2026-04-01', '4'),
-      make('Chevauchement', '2026-03-30', '2026-04-02', '4'),
+      make('Chevauchement', '2026-03-30', '2026-04-02', '3'),
       make('Masqué', '2026-04-01', null, '1'),
       make('Futur', '2026-04-03', null, '4'),
     ],
   };
   assert.deepEqual(printEvents(calendar, new Set(['1'])).map((event) => event.title), ['Chevauchement', 'Courant']);
+});
+
+test('classe les titres sans couleur, avec priorité aux activités du club', () => {
+  const cases = [
+    ['Séance Club Astronomie', '4'],
+    ['Journée astro-imagerie – Prisches', '2'],
+    ['Maximum des Géminides', '3'],
+    ['Maximum des Ursides', '3'],
+    ['La Lune près de Spica', '3'],
+    ['Jupiter près de Régulus', '3'],
+    ['La Lune forme un arc avec Jupiter, Régulus et Mars', '3'],
+    ['Solstice de décembre', '3'],
+    ['Pleine Lune (Superlune)', '3'],
+    ['Conférence sur les éclipses', '2'],
+    ['Événement de test', 'unclassified'],
+    ['  SOIRÉE\u00a0D’OBSERVATION — Pleine Lune  ', '1'],
+    ["SORTIE D'OBSERVATION", '1'],
+    ['Visite et atelier sur la Lune', '2'],
+    ['Inscription à la Nuit des étoiles', '8'],
+    ['Fête de la Science', '5'],
+    ['Excursion à Lille', '7'],
+    ['Lune et Mars', 'unclassified'],
+    ['Opposition au règlement', 'unclassified'],
+    ['Maximum de fréquentation', 'unclassified'],
+    ['Surprésentation et réinscription', 'unclassified'],
+    ['Jupiter près du parking', 'unclassified'],
+  ];
+  for (const [summary, categoryId] of cases) {
+    const event = toCalendarEvent({ ...timedEvent, colorId: undefined, summary });
+    assert.equal(eventCategoryId(event), categoryId, summary);
+    assert.equal(event.color, categories[categoryId]?.color ?? '#EF108B', summary);
+  }
+});
+
+test('une couleur explicite reconnue prévaut et une couleur hors convention reste non classée', () => {
+  const summary = 'Conférence sur les éclipses';
+  for (const [colorId, expected] of [['3', '3'], ['4', '4'], ['11', 'unclassified'], ['', '2']]) {
+    const event = toCalendarEvent({ ...timedEvent, colorId, summary });
+    assert.equal(event.extendedProps.colorId, colorId);
+    assert.equal(eventCategoryId(event), expected);
+  }
+});
+
+test('le mois masque visuellement la catégorie et conserve le titre et l’heure', (t) => {
+  const ui = mockAgenda(t);
+  initialize(settings);
+  const event = toCalendarEvent({ ...timedEvent, summary: 'Pleine Lune', colorId: null });
+  const render = (type) => ui.options.eventContent({ event, timeText: '22:30', view: { type } }).domNodes;
+  const [title, category] = render('dayGridMonth');
+  assert.equal(title.textContent, '22:30 Pleine Lune');
+  assert.equal(category.textContent, 'Phénomènes astronomiques');
+  assert.match(category.className, /visually-hidden/);
+  assert.doesNotMatch(render('listUpcoming')[1].className, /visually-hidden/);
 });

@@ -1,4 +1,5 @@
 import { config } from '../js/config.js';
+import { categories } from '../js/event-categories.js';
 import { fetchCalendarEvents } from '../js/calendar-api.js';
 
 const calendarId = config.calendarId.trim();
@@ -29,7 +30,7 @@ async function checkColors() {
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const { event } = await response.json();
   if (!event || typeof event !== 'object') throw new Error('Palette absente de la réponse.');
-  return Object.entries(config.categories).map(([id, category]) => {
+  return Object.entries(categories).map(([id, category]) => {
     const actual = event[id]?.background;
     const validColor = typeof actual === 'string' && /^#[0-9a-f]{6}$/i.test(actual);
     return {
@@ -51,7 +52,7 @@ const [events, colors] = await Promise.allSettled([
 
 if (events.status === 'fulfilled') {
   console.log('Événements reçus :', events.value.length);
-  console.log('Avec un colorId reconnu :', events.value.filter((event) => event.extendedProps.category).length);
+  console.log('Avec un colorId reconnu :', events.value.filter(({ extendedProps }) => Object.hasOwn(categories, extendedProps.colorId)).length);
 } else {
   console.error('Events.list :', events.reason.message);
 }
