@@ -4,9 +4,11 @@ L’agenda occupe la largeur disponible jusqu’à 72 rem. Le fond général lai
 
 ## Transparence de l’iframe
 
-Le document de l’agenda déclare `color-scheme: light dark` à la racine pour suivre le schéma de l’élément iframe. Des schémas différents peuvent amener le navigateur à peindre un fond opaque, même avec un fond CSS transparent. Le document, le corps de page et le conteneur principal sont transparents. Les panneaux et dialogues conservent leur fond sombre. [CSS Color Adjustment, section 2.4](https://drafts.csswg.org/css-color-adjust-1/#color-scheme-effect)
+Le satellite utilise `color-scheme: normal` à la racine et ne déclare aucune balise `meta color-scheme`. Les fonds de `html`, `body` et `main` sont transparents. Les panneaux et les modales conservent leurs fonds sombres. Un navigateur peut peindre un fond opaque si le schéma de l’élément iframe diffère de celui de la racine embarquée, même si les styles calculés indiquent un fond transparent. [CSS Color Adjustment, section 2.4](https://drafts.csswg.org/css-color-adjust-1/#color-scheme-effect)
 
-Si le gris persiste, inspecter dans Odoo les styles calculés de l’iframe et de ses conteneurs. Une couleur ou une image de fond opaque sur le bloc doit être retirée de ce bloc pour laisser apparaître le fond étoilé. Vérifier également les pseudo-éléments qui pourraient le recouvrir. La correction côté Odoo reste à appliquer uniquement si la recette confirme cette origine.
+Si Odoo impose un schéma à l’iframe, appliquer `color-scheme: normal; background: transparent` directement à l’élément iframe, comme dans l’exemple ci-dessous. Une iframe forcée en `dark` a donné un fond blanc avec le satellite en `normal` dans le test Chromium. Si un fond reste visible avec les deux schémas à `normal`, inspecter les fonds et les pseudo-éléments des conteneurs Odoo.
+
+Le test de rendu Chromium sur une page synthétique a reproduit le gris `#121212` avec la racine `light dark` et une iframe neutre. Avec `normal` des deux côtés, le fond hôte est visible et le panneau du calendrier garde son fond `#12171F`. Confirmer le résultat sur la page Odoo intégrée après déploiement.
 
 ## Dimensions de départ
 
@@ -26,7 +28,7 @@ Exemple pour le bloc Odoo après vérification de la version publiée. Définir 
   title="Agenda du Club Astronomie MJC Douai"
   loading="lazy"
   allow="clipboard-write"
-  style="display:block; width:100%; height:900px; border:0; background:transparent">
+  style="display:block; width:100%; height:900px; border:0; color-scheme:normal; background:transparent">
 </iframe>
 ```
 

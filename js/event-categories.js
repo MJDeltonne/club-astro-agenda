@@ -21,7 +21,7 @@ const opposition = /\b(?:en opposition|oppositions? (?:de|d|du) (?:mercure|venus
 const meteorPeak = /\bmaximum (?:des? |d un |du )?(?:essaims? (?:meteoritiques?|de meteores)|perseides|geminides|ursides|quadrantides|leonides|lyrides|orionides|taurides|aquariides|draconides|andromedides)\b/;
 const celestialSubject = /^(?:(?:la )?lune|mercure|venus|mars|jupiter|saturne|uranus|neptune|pluton|ceres|vesta|soleil|spica|regulus|aldebaran|antares|pollux|castor|les pleiades)\b/;
 const celestialRelation = /\b(?:pres (?:de|du|des|d)|se rapproche (?:de|du|des|d)|forme un arc avec)\b/;
-const celestialTarget = /\b(?:lune|mercure|venus|mars|jupiter|saturne|uranus|neptune|pluton|ceres|vesta|soleil|spica|regulus|aldebaran|antares|pollux|castor|pleiades)\b/;
+const celestialTarget = /\b(?:amas de la creche|lune|mercure|venus|mars|jupiter|saturne|uranus|neptune|pluton|ceres|vesta|soleil|spica|regulus|aldebaran|antares|pollux|castor|pleiades)\b/;
 
 export function classifyEvent(colorId, title = '') {
   if (colorId != null && colorId !== '') {

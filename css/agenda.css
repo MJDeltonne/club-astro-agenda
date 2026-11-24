@@ -1,6 +1,6 @@
 :root {
-  /* Follow the iframe element’s scheme so the browser can keep the canvas transparent. */
-  color-scheme: normal !important;
+  /* Match a neutral Odoo iframe. The panels and controls set their own dark styles. */
+  color-scheme: normal;
   --accent: #EF108B;
   --panel: #12171F;
   --surface: #0B1016;

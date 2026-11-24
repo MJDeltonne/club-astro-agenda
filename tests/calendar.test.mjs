@@ -347,6 +347,8 @@ test('classe les titres sans couleur, avec priorité aux activités du club', ()
     ['Maximum des Géminides', '3'],
     ['Maximum des Ursides', '3'],
     ['La Lune près de Spica', '3'],
+    ['La Lune près de l’amas de la Crèche', '3'],
+    ['La Lune près de la crèche', 'unclassified'],
     ['Jupiter près de Régulus', '3'],
     ['La Lune forme un arc avec Jupiter, Régulus et Mars', '3'],
     ['Solstice de décembre', '3'],
