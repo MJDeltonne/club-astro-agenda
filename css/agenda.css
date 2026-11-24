@@ -1,0 +1,54 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+  color: #202632;
+  background: #f7f8fa;
+}
+
+main {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: clamp(.5rem, 3vw, 2rem);
+}
+
+header p { margin: 0; color: #465166; }
+h1 { margin: .25rem 0 1rem; }
+#status { min-height: 1.5em; margin: .5rem 0; }
+.demo {
+  width: fit-content;
+  padding: .45rem .75rem;
+  border-radius: .35rem;
+  background: #fff0d2;
+  color: #623c00;
+}
+
+#calendar {
+  background: #fff;
+  padding: clamp(.25rem, 1.5vw, 1rem);
+  border: 1px solid #d9dee6;
+  border-radius: .5rem;
+  --fc-button-bg-color: #283b54;
+  --fc-button-border-color: #283b54;
+  --fc-today-bg-color: #fdf0f7;
+}
+
+.fc .fc-toolbar { flex-wrap: wrap; gap: .5rem; }
+.fc .fc-toolbar-title { font-size: clamp(1.15rem, 4vw, 1.65rem); }
+.fc .fc-event { cursor: pointer; }
+.fc .fc-event-title { white-space: normal; overflow-wrap: anywhere; }
+button { font: inherit; }
+#retry { margin-bottom: .75rem; }
+
+dialog {
+  box-sizing: border-box;
+  width: min(36rem, calc(100% - 1.5rem));
+  max-height: 85vh;
+  border: 1px solid #d9dee6;
+  border-radius: .5rem;
+  padding: 1.25rem;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+
+dialog::backdrop { background: rgb(14 22 37 / 55%); }
+#event-description { white-space: pre-wrap; }

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Agenda du Club Astronomie MJC Douai</title>
+  <link rel="stylesheet" href="./css/agenda.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.20/index.global.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.20/locales/fr.global.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/luxon@3.7.2/build/global/luxon.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@fullcalendar/luxon3@6.1.20/index.global.min.js"></script>
+  <script type="module" src="./js/agenda.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <p>Club Astronomie MJC Douai</p>
+      <h1>Agenda</h1>
+    </header>
+    <p id="demo" class="demo" hidden>Mode démonstration · Événements fictifs</p>
+    <p id="status" role="status">Initialisation du calendrier…</p>
+    <button id="retry" type="button" hidden>Réessayer</button>
+    <div id="calendar" aria-label="Calendrier des événements"></div>
+    <noscript>Activez JavaScript pour consulter l’agenda.</noscript>
+  </main>
+  <dialog id="event-details" aria-labelledby="event-title">
+    <h2 id="event-title"></h2>
+    <p id="event-category"></p>
+    <p id="event-location"></p>
+    <p id="event-description"></p>
+    <form method="dialog"><button type="submit" autofocus>Fermer</button></form>
+  </dialog>
+</body>
+</html>
