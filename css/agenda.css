@@ -1,6 +1,6 @@
 :root {
   /* Follow the iframe element’s scheme so the browser can keep the canvas transparent. */
-  color-scheme: light dark;
+  color-scheme: normal !important;
   --accent: #EF108B;
   --panel: #12171F;
   --surface: #0B1016;
