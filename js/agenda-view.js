@@ -3,7 +3,7 @@ import { config } from './config.js';
 export const viewOptions = {
   desktop: 'dayGridMonth',
   mobile: 'listUpcoming',
-  toolbar: 'dayGridMonth,timeGridWeek,timeGridDay,listUpcoming',
+  available: ['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listUpcoming'],
   upcoming: { type: 'list', duration: { days: 30 }, dateIncrement: { days: 30 }, dateAlignment: 'day', buttonText: 'À venir' },
 };
 

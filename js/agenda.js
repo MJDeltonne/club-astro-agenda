@@ -207,6 +207,10 @@ export function initialize(settings = config) {
     }));
   };
 
+  const periodTitle = document.getElementById('period-title');
+  const today = document.getElementById('today');
+  const viewButtons = viewOptions.available.map((view) => [view, document.getElementById(`view-${view}`)]);
+
   const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
     locale: config.locale,
     timeZone: config.timeZone,
@@ -225,8 +229,15 @@ export function initialize(settings = config) {
     },
     moreLinkHint: (num) => `Afficher ${num} événement${num > 1 ? 's' : ''} de plus`,
     dayHeaderFormat: { weekday: 'short', day: 'numeric' },
-    headerToolbar: { left: 'title', center: viewOptions.toolbar, right: 'prev,next today' },
-    buttonText: { month: 'Mois', week: 'Semaine', day: 'Jour' },
+    headerToolbar: false,
+    datesSet({ view }) {
+      periodTitle.textContent = view.title;
+      const now = new Date();
+      today.disabled = now >= view.currentStart && now < view.currentEnd;
+      for (const [name, button] of viewButtons) {
+        button.setAttribute('aria-pressed', String(view.type === name));
+      }
+    },
     noEventsText: 'Aucun événement visible sur cette période.',
     eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
     eventOrderStrict: true,
@@ -259,12 +270,20 @@ export function initialize(settings = config) {
     },
   });
 
+  for (const [view, button] of viewButtons) {
+    button.addEventListener('click', () => calendar.changeView(view));
+  }
+  document.getElementById('previous-period').addEventListener('click', () => calendar.prev());
+  document.getElementById('next-period').addEventListener('click', () => calendar.next());
+  today.addEventListener('click', () => calendar.today());
+
   installDialog(dialog);
   installSubscription(calendarId);
   installFilters(calendar, hiddenCategories);
   installPrinting(calendar, hiddenCategories, () => status.textContent);
   retry.addEventListener('click', () => calendar.refetchEvents());
   status.textContent = '';
+  document.getElementById('calendar-controls').hidden = false;
   calendar.render();
 }
 

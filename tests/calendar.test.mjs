@@ -128,7 +128,8 @@ function mockAgenda(t, { mobile = false } = {}) {
     children: [],
     handlers: new Map(),
     addEventListener(name, callback) { this.handlers.set(name, callback); },
-    setAttribute() {},
+    attributes: new Map(),
+    setAttribute(name, value) { this.attributes.set(name, value); },
     append(...children) { this.children.push(...children); },
     showModal() { this.open = true; },
     close() { this.open = false; },
@@ -144,6 +145,7 @@ function mockAgenda(t, { mobile = false } = {}) {
     get,
     options: null,
     events: [],
+    commands: [],
     window: node(),
   };
   const globals = {
@@ -156,6 +158,10 @@ function mockAgenda(t, { mobile = false } = {}) {
       Calendar: class {
         constructor(_element, options) { state.options = options; }
         render() {}
+        changeView(view) { state.commands.push(view); }
+        prev() { state.commands.push('prev'); }
+        next() { state.commands.push('next'); }
+        today() { state.commands.push('today'); }
         getEvents() { return state.events; }
         batchRendering(callback) { callback(); }
       },
@@ -209,7 +215,22 @@ test('configure les quatre vues avec un démarrage adapté à la largeur', async
       const ui = mockAgenda(t, { mobile });
       initialize(settings);
       assert.equal(ui.options.initialView, mobile ? 'listUpcoming' : 'dayGridMonth');
-      assert.deepEqual(ui.options.headerToolbar.center.split(','), ['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listUpcoming']);
+      assert.equal(ui.options.headerToolbar, false);
+      const views = ['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listUpcoming'];
+      for (const type of views) {
+        ui.get(`view-${type}`).handlers.get('click')();
+        ui.options.datesSet({ view: { type, title: `Période ${type}`, currentStart: new Date(0), currentEnd: new Date(1) } });
+        assert.equal(ui.get('period-title').textContent, `Période ${type}`);
+        for (const name of views) {
+          assert.equal(ui.get(`view-${name}`).attributes.get('aria-pressed'), String(name === type));
+        }
+      }
+      for (const id of ['previous-period', 'next-period', 'today']) ui.get(id).handlers.get('click')();
+      assert.deepEqual(ui.commands, [...views, 'prev', 'next', 'today']);
+      assert.equal(ui.get('today').disabled, false);
+      const now = Date.now();
+      ui.options.datesSet({ view: { type: 'dayGridMonth', title: 'Mois en cours', currentStart: new Date(now - 60000), currentEnd: new Date(now + 60000) } });
+      assert.equal(ui.get('today').disabled, true);
       assert.equal(ui.options.views.listUpcoming.type, 'list');
       assert.deepEqual(ui.options.views.listUpcoming.duration, { days: 30 });
       assert.deepEqual(ui.options.views.listUpcoming.dateIncrement, { days: 30 });

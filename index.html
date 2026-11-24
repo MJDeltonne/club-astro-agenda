@@ -14,21 +14,36 @@
 </head>
 <body>
   <main>
-    <header class="agenda-header">
-      <div>
-        <p>Club Astronomie MJC Douai</p>
-        <h1>Agenda</h1>
-      </div>
-      <div class="agenda-actions">
-        <button id="subscribe" type="button" hidden>S’abonner</button>
-        <button id="print" type="button" hidden>Imprimer</button>
-      </div>
-    </header>
+    <h1 class="visually-hidden">Agenda du Club Astronomie MJC Douai</h1>
     <fieldset id="categories" hidden><legend>Catégories affichées</legend></fieldset>
     <p id="demo" class="demo" hidden>Mode démonstration · Événements fictifs</p>
     <p id="status" role="status">Initialisation du calendrier…</p>
     <button id="retry" type="button" hidden>Réessayer</button>
-    <div id="calendar" aria-label="Calendrier des événements"></div>
+    <section class="calendar-panel" aria-label="Calendrier des événements">
+      <div id="calendar-controls" hidden>
+        <div class="calendar-commands">
+          <div class="calendar-views" role="group" aria-label="Vue du calendrier">
+            <button id="view-dayGridMonth" type="button" aria-pressed="false">Mois</button>
+            <button id="view-timeGridWeek" type="button" aria-pressed="false">Semaine</button>
+            <button id="view-timeGridDay" type="button" aria-pressed="false">Jour</button>
+            <button id="view-listUpcoming" type="button" aria-pressed="false">À venir</button>
+          </div>
+          <div class="agenda-actions">
+            <button id="subscribe" type="button" hidden>S’abonner</button>
+            <button id="print" type="button" hidden>Imprimer</button>
+          </div>
+        </div>
+        <div class="calendar-navigation">
+          <div class="calendar-period">
+            <button id="previous-period" type="button" aria-label="Période précédente">‹</button>
+            <h2 id="period-title" aria-live="polite"></h2>
+            <button id="next-period" type="button" aria-label="Période suivante">›</button>
+          </div>
+          <button id="today" type="button">Aujourd’hui</button>
+        </div>
+      </div>
+      <div id="calendar"></div>
+    </section>
     <section id="print-agenda" aria-label="Agenda à imprimer"></section>
     <noscript>Activez JavaScript pour consulter l’agenda.</noscript>
   </main>
